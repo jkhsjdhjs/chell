@@ -1,0 +1,21 @@
+owners = ["jkhsjdhjs"]
+nickname = "chell"
+nick_password = ""
+alt_nicks = ["chell_"]
+username = "chell"
+realname = "#1498"
+user_info = "the cake is a lie."
+server = "judas.n0xy.net"
+port = 6697
+use_ssl = true
+cert_path = "cert.der"
+channels = ["#chell"]
+umodes = "+R-x"
+encoding = "UTF-8"
+version = "Test Subject #1"
+
+[options]
+mysql_user = "chell"
+mysql_password = ""
+mysql_socket = "/run/mysqld/mysqld.sock"
+mysql_db = "chell"

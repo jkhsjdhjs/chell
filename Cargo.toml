@@ -1,0 +1,12 @@
+[package]
+name = "chell"
+version = "0.1.0"
+authors = ["chell"]
+
+[dependencies]
+base64 = "*"
+error-chain = "*"
+futures = "*"
+irc = "*"
+mysql = "*"
+regex = "*"
