@@ -38,11 +38,12 @@ fn main() {
         let _ = msg.map(|msg| {
             let msg2 = msg.clone();
             match msg.command {
-            PRIVMSG(_, mut msg_text) => {
-                msg_text.remove(0);
-                msg_handler::handle_command(&server, msg2, msg_text)
-            },
-            _ => unreachable!(),
-        }});
+                PRIVMSG(_, mut msg_text) => {
+                    msg_text.remove(0);
+                    msg_handler::handle_command(&server, msg2, msg_text)
+                }
+                _ => unreachable!(),
+            }
+        });
     }
 }

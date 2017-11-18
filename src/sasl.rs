@@ -39,11 +39,10 @@ fn send_msg(server: &IrcServer, i: u8) -> Result<(), Error> {
     }
 }
 
-fn wait_for_msg<S>(
-    stream: S,
-    i: u8,
-) -> Result<(Option<Message>, impl Stream<Item = Message>), ()>
-where S: Stream<Item = Message> {
+fn wait_for_msg<S>(stream: S, i: u8) -> Result<(Option<Message>, impl Stream<Item = Message>), ()>
+where
+    S: Stream<Item = Message>,
+{
     stream
         .skip_while(move |msg| match i {
             0 => match msg.command {
@@ -150,12 +149,7 @@ fn check_msg(msg: Message, server: &IrcServer, i: u8) -> Result<(), Error> {
 //    Ok(stream)
 //}
 
-pub fn auth(
-    server: &IrcServer,
-    stream: ServerStream
-) -> Result<impl Stream<Item = Message>, ()>
-{
-
+pub fn auth(server: &IrcServer, stream: ServerStream) -> Result<impl Stream<Item = Message>, ()> {
     //let mut stream_ref: S = &stream;
 
     //let stream = (0..3).fold(Ok(stream), |acc, i| {
