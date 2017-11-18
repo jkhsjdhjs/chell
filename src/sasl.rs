@@ -22,47 +22,55 @@ trait WaitMsgExt {
 }
 
 impl<S: Stream<Item = Message>> WaitMsgExt for S {
-    fn wait_ls(&self) -> Result<Option<Message>, ()>{
-        Ok(self.skip_while(move |msg| match msg.command {
-            CAP(_, LS, None, _) => ok(false),
-            _ => ok(true),
-        })
-        .into_future()
-        .wait()
-        .map_err(|_| ())?.0)
+    fn wait_ls(&self) -> Result<Option<Message>, ()> {
+        Ok(
+            self.skip_while(move |msg| match msg.command {
+                CAP(_, LS, None, _) => ok(false),
+                _ => ok(true),
+            }).into_future()
+                .wait()
+                .map_err(|_| ())?
+                .0,
+        )
     }
     fn wait_ack(&self) -> Result<Option<Message>, ()> {
-        Ok(self.skip_while(move |msg| match msg.command {
-            CAP(_, ACK, None, _) => ok(false),
+        Ok(
+            self.skip_while(move |msg| match msg.command {
+                CAP(_, ACK, None, _) => ok(false),
                 _ => ok(true),
-        })
-        .into_future()
-        .wait()
-        .map_err(|_| ())?.0)
+            }).into_future()
+                .wait()
+                .map_err(|_| ())?
+                .0,
+        )
     }
     fn wait_mechs(&self) -> Result<Option<Message>, ()> {
-        Ok(self.skip_while(move |msg| match msg.command {
-            AUTHENTICATE(_) => ok(false),
-            Response(RPL_SASLMECHS, _, _) => ok(false),
-            _ => ok(true),
-        })
-        .into_future()
-        .wait()
-        .map_err(|_| ())?.0)
+        Ok(
+            self.skip_while(move |msg| match msg.command {
+                AUTHENTICATE(_) => ok(false),
+                Response(RPL_SASLMECHS, _, _) => ok(false),
+                _ => ok(true),
+            }).into_future()
+                .wait()
+                .map_err(|_| ())?
+                .0,
+        )
     }
     fn wait_finish(&self) -> Result<Option<Message>, ()> {
-        Ok(self.skip_while(move |msg| match msg.command {
-        Response(res, _, _) => match res {
-                RPL_SASLSUCCESS => ok(false),
-                ERR_NICKLOCKED => ok(false),
-                ERR_SASLFAIL => ok(false),
+        Ok(
+            self.skip_while(move |msg| match msg.command {
+                Response(res, _, _) => match res {
+                    RPL_SASLSUCCESS => ok(false),
+                    ERR_NICKLOCKED => ok(false),
+                    ERR_SASLFAIL => ok(false),
+                    _ => ok(true),
+                },
                 _ => ok(true),
-            },
-            _ => ok(true),
-        })
-        .into_future()
-        .wait()
-        .map_err(|_| ())?.0)
+            }).into_future()
+                .wait()
+                .map_err(|_| ())?
+                .0,
+        )
     }
 }
 
@@ -203,12 +211,7 @@ fn check_msg(msg: Message, server: &IrcServer, i: u8) -> Result<(), Error> {
 //    Ok(stream)
 //}
 
-pub fn auth(
-    server: &IrcServer,
-    stream: ServerStream
-) -> Result<ServerStream, ()>
-{
-
+pub fn auth(server: &IrcServer, stream: ServerStream) -> Result<ServerStream, ()> {
     //let mut stream_ref = &stream;
 
     //let stream = (0..3).fold(Ok(stream), |acc, i| {
