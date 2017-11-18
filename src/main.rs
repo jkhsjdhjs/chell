@@ -8,6 +8,7 @@ mod errors {
     error_chain!{}
 }
 mod sasl;
+mod msg_handler;
 
 pub use errors::*;
 use irc::client::prelude::*;
@@ -34,19 +35,14 @@ fn main() {
         })
         .wait()
     {
-        let _ = msg.map(|msg| match msg.command {
-            PRIVMSG(_, ref text) => if text == "!kick" {
-                let _ = server.send(PRIVMSG(
-                    "ChanServ".into(),
-                    [
-                        "KICK",
-                        msg.response_target().unwrap(),
-                        msg.source_nickname().unwrap(),
-                        "lol :D",
-                    ].join(" "),
-                ));
+        let _ = msg.map(|msg| {
+            let msg2 = msg.clone();
+            match msg.command {
+            PRIVMSG(_, mut msg_text) => {
+                msg_text.remove(0);
+                msg_handler::handle_command(&server, msg2, msg_text)
             },
             _ => unreachable!(),
-        });
+        }});
     }
 }
