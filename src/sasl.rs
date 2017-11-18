@@ -13,6 +13,59 @@ use self::base64::encode;
 use self::futures::future::ok;
 use self::regex::Regex;
 
+
+trait WaitMsgExt {
+    fn wait_ls(&self) -> Result<Option<Message>, ()>;
+    fn wait_ack(&self) -> Result<Option<Message>, ()>;
+    fn wait_mechs(&self) -> Result<Option<Message>, ()>;
+    fn wait_finish(&self) -> Result<Option<Message>, ()>;
+}
+
+impl<S: Stream<Item = Message>> WaitMsgExt for S {
+    fn wait_ls(&self) -> Result<Option<Message>, ()>{
+        Ok(self.skip_while(move |msg| match msg.command {
+            CAP(_, LS, None, _) => ok(false),
+            _ => ok(true),
+        })
+        .into_future()
+        .wait()
+        .map_err(|_| ())?.0)
+    }
+    fn wait_ack(&self) -> Result<Option<Message>, ()> {
+        Ok(self.skip_while(move |msg| match msg.command {
+            CAP(_, ACK, None, _) => ok(false),
+                _ => ok(true),
+        })
+        .into_future()
+        .wait()
+        .map_err(|_| ())?.0)
+    }
+    fn wait_mechs(&self) -> Result<Option<Message>, ()> {
+        Ok(self.skip_while(move |msg| match msg.command {
+            AUTHENTICATE(_) => ok(false),
+            Response(RPL_SASLMECHS, _, _) => ok(false),
+            _ => ok(true),
+        })
+        .into_future()
+        .wait()
+        .map_err(|_| ())?.0)
+    }
+    fn wait_finish(&self) -> Result<Option<Message>, ()> {
+        Ok(self.skip_while(move |msg| match msg.command {
+        Response(res, _, _) => match res {
+                RPL_SASLSUCCESS => ok(false),
+                ERR_NICKLOCKED => ok(false),
+                ERR_SASLFAIL => ok(false),
+                _ => ok(true),
+            },
+            _ => ok(true),
+        })
+        .into_future()
+        .wait()
+        .map_err(|_| ())?.0)
+    }
+}
+
 fn send_msg(server: &IrcServer, i: u8) -> Result<(), Error> {
     match i {
         0 => {
@@ -39,7 +92,7 @@ fn send_msg(server: &IrcServer, i: u8) -> Result<(), Error> {
     }
 }
 
-fn wait_for_msg<S>(
+/*fn wait_for_msg<S>(
     stream: S,
     i: u8,
 ) -> Result<(Option<Message>, impl Stream<Item = Message>), ()>
@@ -73,7 +126,7 @@ where S: Stream<Item = Message> {
         .into_future()
         .wait()
         .map_err(|_| ())
-}
+}*/
 
 fn check_msg(msg: Message, server: &IrcServer, i: u8) -> Result<(), Error> {
     match i {
@@ -153,10 +206,10 @@ fn check_msg(msg: Message, server: &IrcServer, i: u8) -> Result<(), Error> {
 pub fn auth(
     server: &IrcServer,
     stream: ServerStream
-) -> Result<impl Stream<Item = Message>, ()>
+) -> Result<ServerStream, ()>
 {
 
-    //let mut stream_ref: S = &stream;
+    //let mut stream_ref = &stream;
 
     //let stream = (0..3).fold(Ok(stream), |acc, i| {
     //    let acc = acc?;
@@ -168,36 +221,56 @@ pub fn auth(
     //})?;
 
 
-    send_msg(server, 0);
-    let (msg, stream) = wait_for_msg(stream, 0)?;
-    let msg = msg.ok_or(())?;
-    check_msg(msg, server, 0);
+    //send_msg(server, 0);
+    //let (msg, stream) = wait_for_msg(stream, 0)?;
+    //let msg = msg.ok_or(())?;
+    //check_msg(msg, server, 0);
 
-    send_msg(server, 1);
-    let (msg, stream) = wait_for_msg(stream, 1)?;
-    let msg = msg.ok_or(())?;
-    check_msg(msg, server, 1);
+    //send_msg(server, 1);
+    //let (msg, stream) = wait_for_msg(stream, 1)?;
+    //let msg = msg.ok_or(())?;
+    //check_msg(msg, server, 1);
 
-    send_msg(server, 2);
-    let (msg, stream) = wait_for_msg(stream, 2)?;
-    let msg = msg.ok_or(())?;
-    check_msg(msg, server, 2);
+    //send_msg(server, 2);
+    //let (msg, stream) = wait_for_msg(stream, 2)?;
+    //let msg = msg.ok_or(())?;
+    //check_msg(msg, server, 2);
 
-    send_msg(server, 3);
-    let (msg, stream) = wait_for_msg(stream, 3)?;
-    let msg = msg.ok_or(())?;
-    check_msg(msg, server, 3);
+    //send_msg(server, 3);
+    //let (msg, stream) = wait_for_msg(stream, 3)?;
+    //let msg = msg.ok_or(())?;
+    //check_msg(msg, server, 3);
 
 
     //let stream_result = authenticate(server, stream, 0);
 
-    //for i in 0..3 {
-    //    send_msg(server, i);
-    //    let (msg, stream) = wait_for_msg(&stream_ref, i)?;
-    //    let msg = msg.ok_or(())?;
-    //    check_msg(msg, server, i);
-    //    stream_ref = stream;
-    //}
+    send_msg(server, 0);
+    let msg = stream.wait_ls()?;
+    let msg = msg.ok_or(())?;
+    check_msg(msg, server, 0);
+
+    send_msg(server, 1);
+    let msg = stream.wait_ack()?;
+    let msg = msg.ok_or(())?;
+    check_msg(msg, server, 1);
+
+    send_msg(server, 2);
+    let msg = stream.wait_mechs()?;
+    let msg = msg.ok_or(())?;
+    check_msg(msg, server, 2);
+
+    send_msg(server, 3);
+    let msg = stream.wait_finish()?;
+    let msg = msg.ok_or(())?;
+    check_msg(msg, server, 3);
+
+    /*for i in 0..3 {
+        send_msg(server, i);
+        let (msg, stream): (Option<Message>, S) = wait_for_msg(stream_ref, i)?;
+        let msg = msg.ok_or(())?;
+        check_msg(msg, server, i);
+        stream_ref = &stream;
+    }*/
 
     //end authentication
     send_msg(server, 4);
